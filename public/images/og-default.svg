@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <rect width="1200" height="630" fill="#12091f"/>
+  <circle cx="220" cy="140" r="230" fill="#7c3aed" opacity=".45"/>
+  <circle cx="990" cy="120" r="260" fill="#ec4899" opacity=".36"/>
+  <circle cx="720" cy="520" r="260" fill="#06b6d4" opacity=".28"/>
+  <text x="90" y="280" fill="white" font-family="Inter, Arial, sans-serif" font-size="78" font-weight="800">HerCodeHerStory</text>
+  <text x="94" y="360" fill="#f0abfc" font-family="Inter, Arial, sans-serif" font-size="46" font-weight="700">Shanika Munasinghe</text>
+  <text x="96" y="430" fill="#cffafe" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="500">My life, code, stories, growth, and everything in between.</text>
+</svg>

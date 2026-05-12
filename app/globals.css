@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 270 100% 99%;
+  --foreground: 229 44% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 229 44% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 229 44% 12%;
+  --primary: 267 91% 60%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 330 88% 66%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 264 33% 94%;
+  --muted-foreground: 232 12% 43%;
+  --accent: 190 95% 48%;
+  --accent-foreground: 229 44% 12%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 265 32% 88%;
+  --input: 265 32% 88%;
+  --ring: 267 91% 60%;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: 230 35% 7%;
+  --foreground: 260 45% 96%;
+  --card: 231 31% 11%;
+  --card-foreground: 260 45% 96%;
+  --popover: 231 31% 11%;
+  --popover-foreground: 260 45% 96%;
+  --primary: 267 91% 70%;
+  --primary-foreground: 229 44% 12%;
+  --secondary: 330 88% 70%;
+  --secondary-foreground: 229 44% 12%;
+  --muted: 231 23% 17%;
+  --muted-foreground: 260 14% 72%;
+  --accent: 190 95% 55%;
+  --accent-foreground: 229 44% 12%;
+  --destructive: 0 70% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 235 22% 22%;
+  --input: 235 22% 22%;
+  --ring: 267 91% 70%;
+}
+
+* {
+  @apply border-border;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+  background:
+    linear-gradient(135deg, rgba(168, 85, 247, 0.14), transparent 32%),
+    linear-gradient(225deg, rgba(244, 114, 182, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(34, 211, 238, 0.08), transparent 42%),
+    hsl(var(--background));
+}
+
+::selection {
+  background: rgba(168, 85, 247, 0.28);
+}
+
+.glass-card {
+  @apply border border-white/50 bg-white/70 shadow-glass backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06];
+}
+
+.gradient-text {
+  @apply bg-gradient-to-r from-violet-600 via-fuchsia-500 to-cyan-500 bg-clip-text text-transparent dark:from-violet-300 dark:via-pink-300 dark:to-cyan-200;
+}
+
+.content-rich {
+  @apply text-base leading-8 text-slate-700 dark:text-slate-200;
+}
+
+.content-rich h1,
+.content-rich h2,
+.content-rich h3 {
+  @apply mt-10 font-bold text-slate-950 dark:text-white;
+}
+
+.content-rich h1 {
+  @apply text-4xl;
+}
+
+.content-rich h2 {
+  @apply text-3xl;
+}
+
+.content-rich h3 {
+  @apply text-2xl;
+}
+
+.content-rich p {
+  @apply my-5;
+}
+
+.content-rich a {
+  @apply font-semibold text-violet-600 underline decoration-violet-300 underline-offset-4 dark:text-violet-300;
+}
+
+.content-rich blockquote {
+  @apply my-6 border-l-4 border-violet-400 pl-5 italic text-slate-600 dark:text-slate-300;
+}
+
+.content-rich ul,
+.content-rich ol {
+  @apply my-5 ml-6 space-y-2;
+}
+
+.content-rich ul {
+  @apply list-disc;
+}
+
+.content-rich ol {
+  @apply list-decimal;
+}
+
+.content-rich pre {
+  @apply my-6 overflow-x-auto rounded-2xl bg-slate-950 p-5 text-sm text-slate-50;
+}
