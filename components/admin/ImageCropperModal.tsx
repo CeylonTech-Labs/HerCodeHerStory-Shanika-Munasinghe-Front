@@ -50,10 +50,19 @@ async function cropToFile(imageSrc: string, crop: Area, rotation: number, fileNa
   canvas.height = crop.height;
   ctx.putImageData(data, 0, 0);
 
+  const maxSize = 1400;
+  const scale = Math.min(1, maxSize / Math.max(canvas.width, canvas.height));
+  const output = document.createElement("canvas");
+  output.width = Math.max(Math.round(canvas.width * scale), 1);
+  output.height = Math.max(Math.round(canvas.height * scale), 1);
+  const outputCtx = output.getContext("2d");
+  if (!outputCtx) throw new Error("Canvas is not supported.");
+  outputCtx.drawImage(canvas, 0, 0, output.width, output.height);
+
   return new Promise<File>((resolve) => {
-    canvas.toBlob((blob) => {
+    output.toBlob((blob) => {
       resolve(new File([blob as Blob], fileName.replace(/\.[^.]+$/, "-cropped.jpg"), { type: "image/jpeg" }));
-    }, "image/jpeg", 0.92);
+    }, "image/jpeg", 0.78);
   });
 }
 
