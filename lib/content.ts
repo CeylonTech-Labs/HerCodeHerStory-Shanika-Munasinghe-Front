@@ -20,7 +20,8 @@ import type {
 const STORAGE_KEY = "hercodeherstory_frontend_store_v1";
 const CONTENT_UPDATED_EVENT = "hercodeherstory-content-updated";
 const ADMIN_EMAIL = "shanika.uok2@gmail.com";
-const ADMIN_PASSWORD = "21PQshani@";
+const CONTENT_API_URL = "/api/content";
+const CONTENT_MUTATION_API_URL = "/api/content/mutate";
 
 const defaultCategories: Category[] = [
   { id: 1, name: "Code & Projects", slug: "code-projects", description: "Software builds, experiments and product thinking.", icon: "💻", color: "#7c3aed" },
@@ -277,22 +278,40 @@ function createDefaultStore(): FrontendStore {
   };
 }
 
-export function exportContentData() {
-  return Promise.resolve(clone(loadStore()));
+export async function exportContentData() {
+  return clone(await getReadableStore());
 }
 
-export function importContentData(data: unknown) {
+export async function importContentData(data: unknown) {
   if (!data || typeof data !== "object") {
     return Promise.reject(new Error("Invalid backup file."));
   }
 
-  const next = {
-    ...createDefaultStore(),
-    ...(data as Partial<FrontendStore>)
-  };
+  const next = normalizeStore(data as Partial<FrontendStore>);
 
   saveStore(next);
-  return Promise.resolve(clone(next));
+  await syncRemoteStore(next, true);
+  return clone(next);
+}
+
+function normalizeStore(data?: Partial<FrontendStore> | null): FrontendStore {
+  const parsed = data || {};
+  return {
+    ...createDefaultStore(),
+    ...parsed,
+    categories: parsed.categories || defaultCategories,
+    tags: parsed.tags || defaultTags,
+    posts: parsed.posts || defaultPosts,
+    projects: parsed.projects || defaultProjects,
+    certificates: parsed.certificates || defaultCertificates,
+    achievements: parsed.achievements || defaultAchievements,
+    timelineEvents: parsed.timelineEvents || defaultTimelineEvents,
+    media: parsed.media || defaultMedia,
+    comments: parsed.comments || defaultComments,
+    messages: parsed.messages || defaultMessages,
+    reactions: parsed.reactions || defaultReactions,
+    profile: parsed.profile ?? defaultProfile
+  };
 }
 
 function loadStore(): FrontendStore {
@@ -307,34 +326,88 @@ function loadStore(): FrontendStore {
     }
 
     const parsed = JSON.parse(raw) as Partial<FrontendStore>;
-    return {
-      ...createDefaultStore(),
-      ...parsed,
-      categories: parsed.categories || defaultCategories,
-      tags: parsed.tags || defaultTags,
-      posts: parsed.posts || defaultPosts,
-      projects: parsed.projects || defaultProjects,
-      certificates: parsed.certificates || defaultCertificates,
-      achievements: parsed.achievements || defaultAchievements,
-      timelineEvents: parsed.timelineEvents || defaultTimelineEvents,
-      media: parsed.media || defaultMedia,
-      comments: parsed.comments || defaultComments,
-      messages: parsed.messages || defaultMessages,
-      reactions: parsed.reactions || defaultReactions,
-      profile: parsed.profile ?? defaultProfile
-    };
+    return normalizeStore(parsed);
   } catch {
     return createDefaultStore();
   }
 }
 
-function saveStore(store: FrontendStore) {
+function saveLocalStore(store: FrontendStore, dispatch = true) {
   if (typeof window === "undefined") {
     return;
   }
 
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-  window.dispatchEvent(new Event(CONTENT_UPDATED_EVENT));
+  if (dispatch) {
+    window.dispatchEvent(new Event(CONTENT_UPDATED_EVENT));
+  }
+}
+
+function saveStore(store: FrontendStore) {
+  saveLocalStore(store);
+  void syncRemoteStore(store);
+}
+
+async function syncRemoteStore(store: FrontendStore, throwOnError = false) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    const response = await fetch(CONTENT_API_URL, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: store })
+    });
+
+    if (!response.ok && throwOnError) {
+      throw new Error("Could not save shared content.");
+    }
+  } catch (error) {
+    if (throwOnError) {
+      throw error;
+    }
+  }
+}
+
+async function loadRemoteStore() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const response = await fetch(CONTENT_API_URL, { cache: "no-store" });
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = await response.json() as { data?: Partial<FrontendStore> | null };
+    if (!payload.data) {
+      return null;
+    }
+
+    const store = normalizeStore(payload.data);
+    saveLocalStore(store, false);
+    return store;
+  } catch {
+    return null;
+  }
+}
+
+async function getReadableStore() {
+  return await loadRemoteStore() || loadStore();
+}
+
+async function mutateRemoteContent(payload: Record<string, unknown>) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  await fetch(CONTENT_MUTATION_API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  }).catch(() => undefined);
 }
 
 function clone<T>(value: T): T {
@@ -396,16 +469,16 @@ function withStore<T>(callback: (store: FrontendStore) => T): T {
   return result;
 }
 
-export function getProfile() {
-  return Promise.resolve(loadStore().profile);
+export async function getProfile() {
+  return (await getReadableStore()).profile;
 }
 
-export function getCategories() {
-  return Promise.resolve(loadStore().categories);
+export async function getCategories() {
+  return (await getReadableStore()).categories;
 }
 
-export function getTags() {
-  return Promise.resolve(loadStore().tags);
+export async function getTags() {
+  return (await getReadableStore()).tags;
 }
 
 export type PostQuery = {
@@ -418,8 +491,8 @@ export type PostQuery = {
   featured?: boolean;
 };
 
-export function getPosts(params?: PostQuery) {
-  const store = loadStore();
+export async function getPosts(params?: PostQuery) {
+  const store = await getReadableStore();
   const page = params?.page || 1;
   const limit = params?.limit || 10;
   const posts = store.posts.map((post) => hydratePost(store, post));
@@ -435,7 +508,7 @@ export function getPosts(params?: PostQuery) {
   const sorted = [...filtered].sort((a, b) => new Date(b.publishedAt || b.createdAt).getTime() - new Date(a.publishedAt || a.createdAt).getTime());
   const paged = sorted.slice((page - 1) * limit, page * limit);
 
-  return Promise.resolve({
+  return {
     posts: paged,
     meta: {
       total: filtered.length,
@@ -443,46 +516,46 @@ export function getPosts(params?: PostQuery) {
       limit,
       totalPages: Math.max(Math.ceil(filtered.length / limit), 1)
     }
-  });
+  };
 }
 
-export function getFeaturedPosts() {
-  const store = loadStore();
+export async function getFeaturedPosts() {
+  const store = await getReadableStore();
   const posts = store.posts
     .map((post) => hydratePost(store, post))
     .filter((post) => post.isFeatured && post.status === "PUBLISHED")
     .sort((a, b) => new Date(b.publishedAt || b.createdAt).getTime() - new Date(a.publishedAt || a.createdAt).getTime());
 
-  return Promise.resolve(posts);
+  return posts;
 }
 
-export function getPostBySlug(slug: string) {
-  const store = loadStore();
+export async function getPostBySlug(slug: string) {
+  const store = await getReadableStore();
   const post = store.posts.find((item) => item.slug === slug);
-  return Promise.resolve(post ? hydratePost(store, post) : null);
+  return post ? hydratePost(store, post) : null;
 }
 
-export function getProjects() {
-  return Promise.resolve(loadStore().projects);
+export async function getProjects() {
+  return (await getReadableStore()).projects;
 }
 
-export function getCertificates() {
-  return Promise.resolve(loadStore().certificates);
+export async function getCertificates() {
+  return (await getReadableStore()).certificates;
 }
 
-export function getAchievements() {
-  return Promise.resolve(loadStore().achievements);
+export async function getAchievements() {
+  return (await getReadableStore()).achievements;
 }
 
-export function getTimelineEvents() {
-  return Promise.resolve(loadStore().timelineEvents);
+export async function getTimelineEvents() {
+  return (await getReadableStore()).timelineEvents;
 }
 
-export function getGalleryMedia(page = 1, limit = 40) {
-  const store = loadStore();
+export async function getGalleryMedia(page = 1, limit = 40) {
+  const store = await getReadableStore();
   const start = (page - 1) * limit;
   const media = store.media.slice(start, start + limit);
-  return Promise.resolve({
+  return {
     media,
     meta: {
       total: store.media.length,
@@ -490,86 +563,86 @@ export function getGalleryMedia(page = 1, limit = 40) {
       limit,
       totalPages: Math.max(Math.ceil(store.media.length / limit), 1)
     }
-  });
+  };
 }
 
-export function getReactions(postId: number) {
-  const store = loadStore();
-  return Promise.resolve(store.reactions[postId] || []);
+export async function getReactions(postId: number) {
+  const store = await getReadableStore();
+  return store.reactions[postId] || [];
 }
 
 export function createReaction(postId: number, reactionType: ReactionType, visitorId: string) {
-  return Promise.resolve(
-    withStore((store) => {
-      const existing = store.reactions[postId] || [];
-      const current = existing.find((item) => item.reactionType === reactionType);
-      if (current) {
-        current.count += 1;
-      } else {
-        existing.push({ reactionType, count: 1 });
-      }
-      store.reactions[postId] = existing;
-      return { reactionType, visitorId };
-    })
-  );
+  const reaction = withStore((store) => {
+    const existing = store.reactions[postId] || [];
+    const current = existing.find((item) => item.reactionType === reactionType);
+    if (current) {
+      current.count += 1;
+    } else {
+      existing.push({ reactionType, count: 1 });
+    }
+    store.reactions[postId] = existing;
+    return { reactionType, visitorId };
+  });
+
+  void mutateRemoteContent({ type: "reaction", postId, reactionType });
+  return Promise.resolve(reaction);
 }
 
 export function createComment(postId: number, payload: { name: string; email?: string; comment: string }) {
-  return Promise.resolve(
-    withStore((store) => {
-      const comment: Comment = {
-        id: Date.now(),
-        postId,
-        name: payload.name,
-        email: payload.email || null,
-        comment: payload.comment,
-        status: "APPROVED",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      store.comments.push(comment);
-      const post = store.posts.find((item) => item.id === postId);
-      if (post) {
-        post._count = { comments: (post._count?.comments || 0) + 1, reactions: post._count?.reactions || 0 };
-      }
-      return comment;
-    })
-  );
+  const comment = withStore((store) => {
+    const comment: Comment = {
+      id: Date.now(),
+      postId,
+      name: payload.name,
+      email: payload.email || null,
+      comment: payload.comment,
+      status: "APPROVED",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    store.comments.push(comment);
+    const post = store.posts.find((item) => item.id === postId);
+    if (post) {
+      post._count = { comments: (post._count?.comments || 0) + 1, reactions: post._count?.reactions || 0 };
+    }
+    return comment;
+  });
+
+  void mutateRemoteContent({ type: "comment", postId, ...payload });
+  return Promise.resolve(comment);
 }
 
 export function submitContactMessage(payload: { name: string; email: string; subject?: string; message: string }) {
-  return Promise.resolve(
-    withStore((store) => {
-      const message: ContactMessage = {
-        id: Date.now(),
-        name: payload.name,
-        email: payload.email,
-        subject: payload.subject || null,
-        message: payload.message,
-        status: "NEW",
-        createdAt: new Date().toISOString()
-      };
-      store.messages.push(message);
-      return message;
-    })
-  );
+  const message = withStore((store) => {
+    const message: ContactMessage = {
+      id: Date.now(),
+      name: payload.name,
+      email: payload.email,
+      subject: payload.subject || null,
+      message: payload.message,
+      status: "NEW",
+      createdAt: new Date().toISOString()
+    };
+    store.messages.push(message);
+    return message;
+  });
+
+  void mutateRemoteContent({ type: "contact", ...payload });
+  return Promise.resolve(message);
 }
 
-export function loginAdmin(payload: { email: string; password: string }) {
-  if (payload.email.trim().toLowerCase() !== ADMIN_EMAIL || payload.password !== ADMIN_PASSWORD) {
-    return Promise.reject(new Error("Invalid email or password."));
+export async function loginAdmin(payload: { email: string; password: string }) {
+  const response = await fetch("/api/admin/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    throw new Error("Invalid email or password.");
   }
 
-  return Promise.resolve({
-    token: "frontend-only-token",
-    user: {
-      id: 1,
-      name: "Shanika Munasinghe",
-      email: ADMIN_EMAIL,
-      role: "ADMIN" as const,
-      bio: "Frontend-only admin session"
-    }
-  });
+  return response.json();
 }
 
 export function getMe() {
@@ -582,9 +655,9 @@ export function getMe() {
   });
 }
 
-export function getDashboardStats(): Promise<DashboardStats> {
-  const store = loadStore();
-  return Promise.resolve({
+export async function getDashboardStats(): Promise<DashboardStats> {
+  const store = await getReadableStore();
+  return {
     users: 1,
     posts: store.posts.length,
     publishedPosts: store.posts.filter((post) => post.status === "PUBLISHED").length,
@@ -599,13 +672,13 @@ export function getDashboardStats(): Promise<DashboardStats> {
     media: store.media.length,
     contactMessages: store.messages.length,
     newContactMessages: store.messages.filter((message) => message.status === "NEW").length
-  });
+  };
 }
 
-export function adminGetComments(status?: string) {
-  const store = loadStore();
+export async function adminGetComments(status?: string) {
+  const store = await getReadableStore();
   const comments = status ? store.comments.filter((comment) => comment.status === status) : store.comments;
-  return Promise.resolve({ comments, meta: { total: comments.length, page: 1, limit: comments.length, totalPages: 1 } });
+  return { comments, meta: { total: comments.length, page: 1, limit: comments.length, totalPages: 1 } };
 }
 
 export function updateCommentStatus(id: number, status: Comment["status"]) {
@@ -630,10 +703,10 @@ export function deleteComment(id: number) {
   );
 }
 
-export function adminGetMessages(status?: string) {
-  const store = loadStore();
+export async function adminGetMessages(status?: string) {
+  const store = await getReadableStore();
   const messages = status ? store.messages.filter((message) => message.status === status) : store.messages;
-  return Promise.resolve({ messages, meta: { total: messages.length, page: 1, limit: messages.length, totalPages: 1 } });
+  return { messages, meta: { total: messages.length, page: 1, limit: messages.length, totalPages: 1 } };
 }
 
 export function updateMessageStatus(id: number, status: ContactMessage["status"]) {
