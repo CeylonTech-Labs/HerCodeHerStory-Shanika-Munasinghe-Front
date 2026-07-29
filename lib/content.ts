@@ -277,6 +277,24 @@ function createDefaultStore(): FrontendStore {
   };
 }
 
+export function exportContentData() {
+  return Promise.resolve(clone(loadStore()));
+}
+
+export function importContentData(data: unknown) {
+  if (!data || typeof data !== "object") {
+    return Promise.reject(new Error("Invalid backup file."));
+  }
+
+  const next = {
+    ...createDefaultStore(),
+    ...(data as Partial<FrontendStore>)
+  };
+
+  saveStore(next);
+  return Promise.resolve(clone(next));
+}
+
 function loadStore(): FrontendStore {
   if (typeof window === "undefined") {
     return createDefaultStore();
