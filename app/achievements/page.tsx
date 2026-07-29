@@ -1,26 +1,41 @@
-import type { Metadata } from "next";
+"use client";
+
 import Image from "next/image";
 import { PageShell } from "@/components/common/PageShell";
 import { SectionTitle } from "@/components/common/SectionTitle";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/common/EmptyState";
 import { getAchievements } from "@/lib/api";
 import type { Achievement } from "@/lib/types";
 import { formatDate, imageFallback } from "@/lib/utils";
-import { EmptyState } from "@/components/common/EmptyState";
+import { useEffect, useState } from "react";
 
-export const dynamic = "force-dynamic";
+export default function AchievementsPage() {
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
 
-export const metadata: Metadata = {
-  title: "Achievements",
-  description: "Awards, achievements, activities and meaningful wins."
-};
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const next = await getAchievements();
+        if (active) setAchievements(next);
+      } catch {
+        if (active) setAchievements([]);
+      }
+    };
 
-export default async function AchievementsPage() {
-  let achievements: Achievement[] = [];
-  try {
-    achievements = await getAchievements();
-  } catch {}
+    load();
+    const onContentUpdated = () => {
+      load();
+    };
+
+    window.addEventListener("hercodeherstory-content-updated", onContentUpdated);
+    return () => {
+      active = false;
+      window.removeEventListener("hercodeherstory-content-updated", onContentUpdated);
+    };
+  }, []);
 
   return (
     <PageShell>

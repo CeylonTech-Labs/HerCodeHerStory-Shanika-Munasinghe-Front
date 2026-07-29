@@ -14,7 +14,7 @@ export function CertificateHighlights({ certificates }: { certificates: Certific
           {certificates.slice(0, 3).map((certificate) => (
             <Card key={certificate.id} className="overflow-hidden">
               <div className="relative aspect-[4/3]">
-                <Image src={certificate.certificateImage || imageFallback(certificate.title)} alt={certificate.title} fill className="object-cover" sizes="33vw" />
+                <Image src={certificate.certificateImage || imageFallback(certificate.title)} alt={certificate.title} fill className="object-cover" sizes="33vw" unoptimized />
               </div>
               <CardContent className="p-5">
                 <h3 className="font-black">{certificate.title}</h3>
