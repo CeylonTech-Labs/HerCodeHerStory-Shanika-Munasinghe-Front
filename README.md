@@ -26,6 +26,15 @@ Uploaded media is saved as browser data URLs in `localStorage`.
 
 Important: because there is no hosted backend/database, admin changes are stored per browser/device. They will persist in the same browser, but they are not shared across visitors or devices.
 
+To move edited content from localhost to Vercel:
+
+1. Open the localhost admin dashboard.
+2. Go to `/admin/settings`.
+3. Click `Export`.
+4. Open the deployed Vercel admin dashboard.
+5. Go to `/admin/settings`.
+6. Click `Import` and choose the exported JSON file.
+
 ## Admin Login
 
 ```txt
