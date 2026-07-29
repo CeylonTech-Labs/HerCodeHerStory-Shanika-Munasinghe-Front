@@ -2,7 +2,38 @@
 
 Next.js App Router frontend for the HerCodeHerStory personal platform.
 
-## Setup
+This project is now frontend-only for Vercel hosting. It does not require the Express backend, database, Cloudinary, JWT secrets, or `NEXT_PUBLIC_API_URL`.
+
+## How Data Works
+
+All content operations are handled in the browser through `lib/content.ts` and exposed through `lib/api.ts`.
+
+- Admin login
+- Posts and stories
+- Categories and tags
+- Projects
+- Certificates
+- Achievements
+- Timeline events
+- Media uploads
+- Comments
+- Reactions
+- Contact messages
+- Profile settings
+- Dashboard stats
+
+Uploaded media is saved as browser data URLs in `localStorage`.
+
+Important: because there is no hosted backend/database, admin changes are stored per browser/device. They will persist in the same browser, but they are not shared across visitors or devices.
+
+## Admin Login
+
+```txt
+Email: shanika.uok2@gmail.com
+Password: 21PQshani@
+```
+
+## Local Setup
 
 1. Install dependencies:
 
@@ -10,34 +41,31 @@ Next.js App Router frontend for the HerCodeHerStory personal platform.
    npm install
    ```
 
-2. Create `.env` from `.env.example`:
-
-   ```bash
-   cp .env.example .env
-   ```
-
-3. Set the backend API URL:
-
-   ```env
-   NEXT_PUBLIC_API_URL="http://localhost:5000/api"
-   ```
-
-4. Run the app:
+2. Run the app:
 
    ```bash
    npm run dev
    ```
 
-## shadcn/ui Notes
+No `.env` values are required for frontend-only mode.
 
-The project includes a `components.json` file and local shadcn-style primitives under `components/ui`.
-To add more official shadcn/ui components later, run:
+## Vercel Deployment
 
-```bash
-npx shadcn@latest add dialog tabs dropdown-menu form
+Deploy only this frontend folder:
+
+```txt
+HerCodeHerStory-Shanika-Munasinghe-Front
 ```
 
-The current UI primitives already cover buttons, cards, badges, dialogs, inputs, textareas and skeletons.
+Recommended Vercel settings:
+
+```txt
+Framework Preset: Next.js
+Build Command: npm run build
+Install Command: npm install
+Output Directory: .next
+Environment Variables: none required
+```
 
 ## Pages
 
@@ -52,8 +80,10 @@ The current UI primitives already cover buttons, cards, badges, dialogs, inputs,
 - `/gallery`
 - `/contact`
 - `/resume`
+- `/admin/login`
+- `/admin/dashboard`
 
-## API Integration
+## UI Notes
 
-All API calls live in `lib/api.ts` and use `NEXT_PUBLIC_API_URL`.
-The pages handle missing backend data with empty states so the frontend can still build before the backend is running.
+The project includes a `components.json` file and local shadcn-style primitives under `components/ui`.
+The current UI primitives cover buttons, cards, badges, dialogs, inputs, textareas and skeletons.

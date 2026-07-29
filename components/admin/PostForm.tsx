@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -40,6 +40,7 @@ type Values = z.infer<typeof schema>;
 export function PostForm({ post, categories }: { post?: Post; categories: Category[] }) {
   const router = useRouter();
   const draftKey = post ? `post_draft_${post.id}` : "post_draft_create";
+  const [galleryImages, setGalleryImages] = useState<string[]>(post?.media?.filter((item) => item.fileType === "IMAGE").map((item) => item.fileUrl) || []);
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -63,6 +64,10 @@ export function PostForm({ post, categories }: { post?: Post; categories: Catego
   const values = form.watch();
 
   useEffect(() => {
+    setGalleryImages(post?.media?.filter((item) => item.fileType === "IMAGE").map((item) => item.fileUrl) || []);
+  }, [post]);
+
+  useEffect(() => {
     const saved = window.localStorage.getItem(draftKey);
     if (!post && saved) form.reset(JSON.parse(saved));
   }, [draftKey, form, post]);
@@ -84,7 +89,9 @@ export function PostForm({ post, categories }: { post?: Post; categories: Catego
       const savedPost = post ? await updatePost(post.id, payload) : await createPost(payload);
       window.localStorage.removeItem(draftKey);
       toast.success(post ? "Post updated." : "Post created.");
-      router.push(post ? "/admin/posts" : `/admin/posts/edit/${savedPost.id}`);
+      if (savedPost) {
+        router.push(post ? "/admin/posts" : `/admin/posts/edit/${savedPost.id}`);
+      }
     } catch (error) {
       toast.error(getApiErrorMessage(error, "Could not save post."));
     }
@@ -153,8 +160,11 @@ export function PostForm({ post, categories }: { post?: Post; categories: Catego
               label="Gallery images"
               multiple
               postId={post.id}
-              value={post.media?.filter((item) => item.fileType === "IMAGE").map((item) => item.fileUrl) || []}
-              onChange={() => toast.success("Gallery image uploaded and attached to this post.")}
+              value={galleryImages}
+              onChange={(urls) => {
+                setGalleryImages(Array.isArray(urls) ? urls : [urls]);
+                toast.success("Gallery image uploaded and attached to this post.");
+              }}
             />
           ) : (
             <p className="rounded-lg border p-3 text-xs text-muted-foreground">After saving, this page will open edit mode where you can attach gallery images to the story.</p>

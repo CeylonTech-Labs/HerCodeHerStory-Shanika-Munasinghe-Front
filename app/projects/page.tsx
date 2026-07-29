@@ -1,19 +1,35 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useEffect, useState } from "react";
 import { getProjects } from "@/lib/api";
 import type { Project } from "@/lib/types";
 import { ProjectsClient } from "./ProjectsClient";
 
-export const dynamic = "force-dynamic";
+export default function ProjectsPage() {
+  const [projects, setProjects] = useState<Project[]>([]);
 
-export const metadata: Metadata = {
-  title: "Projects",
-  description: "Software engineering projects, tech stack, GitHub links and live demos."
-};
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const next = await getProjects();
+        if (active) setProjects(next);
+      } catch {
+        if (active) setProjects([]);
+      }
+    };
 
-export default async function ProjectsPage() {
-  let projects: Project[] = [];
-  try {
-    projects = await getProjects();
-  } catch {}
+    load();
+    const onContentUpdated = () => {
+      load();
+    };
+
+    window.addEventListener("hercodeherstory-content-updated", onContentUpdated);
+    return () => {
+      active = false;
+      window.removeEventListener("hercodeherstory-content-updated", onContentUpdated);
+    };
+  }, []);
+
   return <ProjectsClient projects={projects} />;
 }
