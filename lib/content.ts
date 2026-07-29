@@ -337,7 +337,12 @@ function saveLocalStore(store: FrontendStore, dispatch = true) {
     return;
   }
 
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  } catch {
+    window.localStorage.removeItem(STORAGE_KEY);
+  }
+
   if (dispatch) {
     window.dispatchEvent(new Event(CONTENT_UPDATED_EVENT));
   }
@@ -1009,6 +1014,35 @@ export function deleteCategory(id: number) {
 
 function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
+    if (file.type.startsWith("image/")) {
+      const objectUrl = URL.createObjectURL(file);
+      const image = new Image();
+      image.onload = () => {
+        const maxSize = 1400;
+        const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(Math.round(image.width * scale), 1);
+        canvas.height = Math.max(Math.round(image.height * scale), 1);
+        const context = canvas.getContext("2d");
+
+        if (!context) {
+          URL.revokeObjectURL(objectUrl);
+          reject(new Error("Could not prepare image upload."));
+          return;
+        }
+
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(objectUrl);
+        resolve(canvas.toDataURL("image/jpeg", 0.78));
+      };
+      image.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error("Could not read image file."));
+      };
+      image.src = objectUrl;
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === "string") {
@@ -1026,7 +1060,7 @@ export function uploadMedia(files: File[], payload?: { postId?: number; caption?
   return new Promise<Media[]>((resolve, reject) => {
     const run = async () => {
       try {
-        const store = loadStore();
+        const store = await getReadableStore();
         const uploaded = await Promise.all(files.map(async (file, index) => ({
           id: Date.now() + index,
           postId: payload?.postId || null,
@@ -1069,17 +1103,15 @@ export function deleteMedia(id: number) {
   );
 }
 
-export function updateProfile(payload: Partial<Profile>) {
-  return Promise.resolve(
-    withStore((store) => {
-      store.profile = {
-        ...(store.profile || defaultProfile),
-        ...payload,
-        id: 1
-      };
-      return store.profile;
-    })
-  );
+export async function updateProfile(payload: Partial<Profile>) {
+  const store = await getReadableStore();
+  store.profile = {
+    ...(store.profile || defaultProfile),
+    ...payload,
+    id: 1
+  };
+  saveStore(store);
+  return store.profile;
 }
 
 export function getApiErrorMessage(error: unknown, fallback = "Something went wrong.") {
