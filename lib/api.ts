@@ -39,6 +39,8 @@ export const getAchievements = () => import("./content").then(({ getAchievements
 export const getTimelineEvents = () => import("./content").then(({ getTimelineEvents }) => getTimelineEvents());
 export const getGalleryMedia = (page = 1, limit = 40) => import("./content").then(({ getGalleryMedia }) => getGalleryMedia(page, limit));
 export const getProfile = () => import("./content").then(({ getProfile }) => getProfile());
+export const exportContentData = () => import("./content").then(({ exportContentData }) => exportContentData());
+export const importContentData = (data: unknown) => import("./content").then(({ importContentData }) => importContentData(data));
 export const getReactions = (postId: number) => import("./content").then(({ getReactions }) => getReactions(postId));
 export const createReaction = (postId: number, reactionType: ReactionType, visitorId: string) => import("./content").then(({ createReaction }) => createReaction(postId, reactionType, visitorId));
 export const createComment = (postId: number, payload: { name: string; email?: string; comment: string }) => import("./content").then(({ createComment }) => createComment(postId, payload));
