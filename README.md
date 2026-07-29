@@ -2,11 +2,15 @@
 
 Next.js App Router frontend for the HerCodeHerStory personal platform.
 
-This project is now frontend-only for Vercel hosting. It does not require the Express backend, database, Cloudinary, JWT secrets, or `NEXT_PUBLIC_API_URL`.
+This project is hosted as one Vercel Next.js app. It does not require the separate Express backend or Cloudinary.
 
 ## How Data Works
 
-All content operations are handled in the browser through `lib/content.ts` and exposed through `lib/api.ts`.
+Content operations are handled through `lib/content.ts` and exposed through `lib/api.ts`.
+
+When `DATABASE_URL` is configured on Vercel, the app uses Next.js API routes in this same frontend project to save one shared content snapshot in MySQL. This makes public content visible to all visitors and devices.
+
+If `DATABASE_URL` is not configured, the app falls back to browser `localStorage`.
 
 - Admin login
 - Posts and stories
@@ -22,9 +26,9 @@ All content operations are handled in the browser through `lib/content.ts` and e
 - Profile settings
 - Dashboard stats
 
-Uploaded media is saved as browser data URLs in `localStorage`.
+Uploaded media is saved as browser data URLs inside the shared content snapshot.
 
-Important: because there is no hosted backend/database, admin changes are stored per browser/device. They will persist in the same browser, but they are not shared across visitors or devices.
+Important: large uploaded images can make the content snapshot heavy. Prefer optimized/compressed images for Vercel and MySQL storage.
 
 To move edited content from localhost to Vercel:
 
@@ -56,7 +60,7 @@ Password: 21PQshani@
    npm run dev
    ```
 
-No `.env` values are required for frontend-only mode.
+For shared content locally, add the same environment variables shown below.
 
 ## Vercel Deployment
 
@@ -73,7 +77,21 @@ Framework Preset: Next.js
 Build Command: npm run build
 Install Command: npm install
 Output Directory: .next
-Environment Variables: none required
+Environment Variables:
+
+DATABASE_URL
+ADMIN_EMAIL
+ADMIN_PASSWORD
+ADMIN_SESSION_SECRET
+```
+
+Use your AlwaysData MySQL connection for `DATABASE_URL`.
+
+```env
+DATABASE_URL="mysql://USER:PASSWORD@HOST:3306/DATABASE_NAME"
+ADMIN_EMAIL="shanika.uok2@gmail.com"
+ADMIN_PASSWORD="your-admin-password"
+ADMIN_SESSION_SECRET="a-long-random-secret"
 ```
 
 ## Pages
