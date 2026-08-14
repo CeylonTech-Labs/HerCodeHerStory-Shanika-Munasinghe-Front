@@ -1,6 +1,6 @@
 # HerCodeHerStory - Shanika Munasinghe Frontend
 
-link : https://her-code-her-story-shanika-munasing.vercel.app/ 
+link : 
 
 
 Next.js App Router frontend for the HerCodeHerStory personal platform.
