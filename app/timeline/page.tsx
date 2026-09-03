@@ -1,35 +1,19 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import type { Metadata } from "next";
 import { getTimelineEvents } from "@/lib/api";
 import type { TimelineEvent } from "@/lib/types";
 import { TimelineClient } from "./TimelineClient";
 
-export default function TimelinePage() {
-  const [events, setEvents] = useState<TimelineEvent[]>([]);
+export const dynamic = "force-dynamic";
 
-  useEffect(() => {
-    let active = true;
-    const load = async () => {
-      try {
-        const next = await getTimelineEvents();
-        if (active) setEvents(next);
-      } catch {
-        if (active) setEvents([]);
-      }
-    };
+export const metadata: Metadata = {
+  title: "Timeline",
+  description: "Life timeline with academic, project, travel and personal growth events."
+};
 
-    load();
-    const onContentUpdated = () => {
-      load();
-    };
-
-    window.addEventListener("hercodeherstory-content-updated", onContentUpdated);
-    return () => {
-      active = false;
-      window.removeEventListener("hercodeherstory-content-updated", onContentUpdated);
-    };
-  }, []);
-
+export default async function TimelinePage() {
+  let events: TimelineEvent[] = [];
+  try {
+    events = await getTimelineEvents();
+  } catch {}
   return <TimelineClient events={events} />;
 }

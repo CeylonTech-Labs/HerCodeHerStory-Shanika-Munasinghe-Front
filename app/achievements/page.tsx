@@ -1,41 +1,26 @@
-"use client";
-
+import type { Metadata } from "next";
 import Image from "next/image";
 import { PageShell } from "@/components/common/PageShell";
 import { SectionTitle } from "@/components/common/SectionTitle";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { EmptyState } from "@/components/common/EmptyState";
 import { getAchievements } from "@/lib/api";
 import type { Achievement } from "@/lib/types";
 import { formatDate, imageFallback } from "@/lib/utils";
-import { useEffect, useState } from "react";
+import { EmptyState } from "@/components/common/EmptyState";
 
-export default function AchievementsPage() {
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
+export const dynamic = "force-dynamic";
 
-  useEffect(() => {
-    let active = true;
-    const load = async () => {
-      try {
-        const next = await getAchievements();
-        if (active) setAchievements(next);
-      } catch {
-        if (active) setAchievements([]);
-      }
-    };
+export const metadata: Metadata = {
+  title: "Achievements",
+  description: "Awards, achievements, activities and meaningful wins."
+};
 
-    load();
-    const onContentUpdated = () => {
-      load();
-    };
-
-    window.addEventListener("hercodeherstory-content-updated", onContentUpdated);
-    return () => {
-      active = false;
-      window.removeEventListener("hercodeherstory-content-updated", onContentUpdated);
-    };
-  }, []);
+export default async function AchievementsPage() {
+  let achievements: Achievement[] = [];
+  try {
+    achievements = await getAchievements();
+  } catch {}
 
   return (
     <PageShell>
