@@ -20,8 +20,13 @@ import type {
 import { clearSession, getToken } from "./auth";
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const normalizeApiUrl = (url: string) => {
+  const normalized = url.trim().replace(/\/+$/, "");
+  return normalized.endsWith("/api") ? normalized : `${normalized}/api`;
+};
+
 const resolveApiUrl = () => {
-  const normalized = rawApiUrl.replace(/\/$/, "");
+  const normalized = normalizeApiUrl(rawApiUrl);
 
   if (typeof window === "undefined") {
     return normalized;
