@@ -43,7 +43,7 @@ export function ImageUploader({
       onChange(multiple ? [...(Array.isArray(value) ? value : value ? [value] : []), ...urls] : urls[0], shape);
       toast.success("Image uploaded.");
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Upload failed. Please choose a smaller local image."));
+      toast.error(getApiErrorMessage(error, "Upload failed. Check backend Cloudinary settings."));
     } finally {
       setUploading(false);
     }
@@ -59,7 +59,7 @@ export function ImageUploader({
         <div className="grid gap-3 sm:grid-cols-3">
           {values.map((url) => (
             <div key={url} className="relative aspect-video overflow-hidden rounded-lg border">
-              <Image src={url} alt={label} fill className="object-cover" sizes="20vw" unoptimized />
+              <Image src={url} alt={label} fill className="object-cover" sizes="20vw" />
             </div>
           ))}
         </div>

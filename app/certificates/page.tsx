@@ -1,35 +1,19 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import type { Metadata } from "next";
 import { getCertificates } from "@/lib/api";
 import type { Certificate } from "@/lib/types";
 import { CertificatesClient } from "./CertificatesClient";
 
-export default function CertificatesPage() {
-  const [certificates, setCertificates] = useState<Certificate[]>([]);
+export const dynamic = "force-dynamic";
 
-  useEffect(() => {
-    let active = true;
-    const load = async () => {
-      try {
-        const next = await getCertificates();
-        if (active) setCertificates(next);
-      } catch {
-        if (active) setCertificates([]);
-      }
-    };
+export const metadata: Metadata = {
+  title: "Certificates",
+  description: "Certificate showcase with issuers, dates, images and credentials."
+};
 
-    load();
-    const onContentUpdated = () => {
-      load();
-    };
-
-    window.addEventListener("hercodeherstory-content-updated", onContentUpdated);
-    return () => {
-      active = false;
-      window.removeEventListener("hercodeherstory-content-updated", onContentUpdated);
-    };
-  }, []);
-
+export default async function CertificatesPage() {
+  let certificates: Certificate[] = [];
+  try {
+    certificates = await getCertificates();
+  } catch {}
   return <CertificatesClient certificates={certificates} />;
 }
