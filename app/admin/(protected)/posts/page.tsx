@@ -22,7 +22,7 @@ export default function AdminPostsPage() {
   const [category, setCategory] = useState("");
 
   const load = () => {
-    getPosts({ limit: 100, status: status as "DRAFT" | "PUBLISHED" | undefined, category: category || undefined }).then((data) => setPosts(data.posts)).catch(() => toast.error("Could not load posts."));
+    getPosts({ limit: 100, status: status ? status as "DRAFT" | "PUBLISHED" : undefined, category: category || undefined }).then((data) => setPosts(data.posts)).catch(() => toast.error("Could not load posts."));
   };
   useEffect(() => { load(); }, [status, category]);
   useEffect(() => { getCategories().then(setCategories).catch(() => undefined); }, []);
