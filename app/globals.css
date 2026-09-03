@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 :root {
+  --font-sans: "Inter", "Segoe UI", Arial, sans-serif;
   --background: 270 100% 99%;
   --foreground: 229 44% 12%;
   --card: 0 0% 100%;
