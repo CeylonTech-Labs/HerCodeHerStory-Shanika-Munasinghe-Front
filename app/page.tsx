@@ -1,9 +1,5 @@
-"use client";
-
 import { Mail } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { CertificateHighlights } from "@/components/home/CertificateHighlights";
 import { FeaturedPosts } from "@/components/home/FeaturedPosts";
 import { HeroSection } from "@/components/home/HeroSection";
@@ -13,62 +9,27 @@ import { TimelinePreview } from "@/components/home/TimelinePreview";
 import { Button } from "@/components/ui/button";
 import { getAchievements, getCertificates, getFeaturedPosts, getPosts, getProfile, getProjects, getTimelineEvents } from "@/lib/api";
 import type { Achievement, Certificate, Post, Profile, Project, TimelineEvent } from "@/lib/types";
-import { imageFallback } from "@/lib/utils";
 
-export default function HomePage() {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [featuredPosts, setFeaturedPosts] = useState<Post[]>([]);
-  const [recentPosts, setRecentPosts] = useState<{ posts: Post[]; meta: { total: number; page: number; limit: number; totalPages: number } }>({ posts: [], meta: { total: 0, page: 1, limit: 6, totalPages: 0 } });
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [certificates, setCertificates] = useState<Certificate[]>([]);
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
+export const dynamic = "force-dynamic";
 
-  useEffect(() => {
-    let active = true;
-    const load = async () => {
-      try {
-        const [nextProfile, nextFeatured, nextPosts, nextProjects, nextCertificates, nextAchievements, nextTimeline] = await Promise.all([
-          getProfile(),
-          getFeaturedPosts(),
-          getPosts({ limit: 6, status: "PUBLISHED" }),
-          getProjects(),
-          getCertificates(),
-          getAchievements(),
-          getTimelineEvents()
-        ]);
-        if (!active) return;
-        setProfile(nextProfile);
-        setFeaturedPosts(nextFeatured);
-        setRecentPosts(nextPosts);
-        setProjects(nextProjects);
-        setCertificates(nextCertificates);
-        setAchievements(nextAchievements);
-        setTimeline(nextTimeline);
-      } catch {
-        if (active) {
-          setProfile(null);
-          setFeaturedPosts([]);
-          setRecentPosts({ posts: [], meta: { total: 0, page: 1, limit: 6, totalPages: 0 } });
-          setProjects([]);
-          setCertificates([]);
-          setAchievements([]);
-          setTimeline([]);
-        }
-      }
-    };
+async function safe<T>(promise: Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await promise;
+  } catch {
+    return fallback;
+  }
+}
 
-    load();
-    const onContentUpdated = () => {
-      load();
-    };
-
-    window.addEventListener("hercodeherstory-content-updated", onContentUpdated);
-    return () => {
-      active = false;
-      window.removeEventListener("hercodeherstory-content-updated", onContentUpdated);
-    };
-  }, []);
+export default async function HomePage() {
+  const [profile, featuredPosts, recentPosts, projects, certificates, achievements, timeline] = await Promise.all([
+    safe<Profile | null>(getProfile(), null),
+    safe<Post[]>(getFeaturedPosts(), []),
+    safe(getPosts({ limit: 6 }), { posts: [], meta: { total: 0, page: 1, limit: 6, totalPages: 0 } }),
+    safe<Project[]>(getProjects(), []),
+    safe<Certificate[]>(getCertificates(), []),
+    safe<Achievement[]>(getAchievements(), []),
+    safe<TimelineEvent[]>(getTimelineEvents(), [])
+  ]);
 
   return (
     <>
@@ -79,21 +40,13 @@ export default function HomePage() {
       <CertificateHighlights certificates={certificates} />
       <section className="container py-14">
         <div className="grid gap-5 md:grid-cols-3">
-          {achievements.slice(0, 3).map((achievement) => {
-            const image = achievement.imageUrl || imageFallback(achievement.title);
-            return (
-              <div key={achievement.id} className="glass-card overflow-hidden rounded-lg">
-                <div className="relative aspect-[4/3] overflow-hidden">
-                  <Image src={image} alt={achievement.title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" unoptimized />
-                </div>
-                <div className="p-5">
-                  <p className="text-sm font-bold text-secondary">{achievement.category || "Achievement"}</p>
-                  <h3 className="mt-2 text-xl font-black">{achievement.title}</h3>
-                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-muted-foreground">{achievement.description}</p>
-                </div>
-              </div>
-            );
-          })}
+          {achievements.slice(0, 3).map((achievement) => (
+            <div key={achievement.id} className="glass-card rounded-lg p-5">
+              <p className="text-sm font-bold text-secondary">{achievement.category || "Achievement"}</p>
+              <h3 className="mt-2 text-xl font-black">{achievement.title}</h3>
+              <p className="mt-3 line-clamp-3 text-sm leading-6 text-muted-foreground">{achievement.description}</p>
+            </div>
+          ))}
         </div>
       </section>
       <TimelinePreview events={timeline} />

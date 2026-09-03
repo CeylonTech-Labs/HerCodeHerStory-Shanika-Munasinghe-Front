@@ -20,7 +20,7 @@ async function safe<T>(promise: Promise<T>, fallback: T): Promise<T> {
 
 export default async function StoriesPage() {
   const [postData, categories, tags] = await Promise.all([
-    safe(getPosts({ limit: 100, status: "PUBLISHED" }), { posts: [] as Post[], meta: { total: 0, page: 1, limit: 100, totalPages: 0 } }),
+    safe(getPosts({ limit: 100 }), { posts: [] as Post[], meta: { total: 0, page: 1, limit: 100, totalPages: 0 } }),
     safe<Category[]>(getCategories(), []),
     safe<Tag[]>(getTags(), [])
   ]);

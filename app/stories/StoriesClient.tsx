@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/common/EmptyState";
 import { PageShell } from "@/components/common/PageShell";
 import { SectionTitle } from "@/components/common/SectionTitle";
@@ -9,13 +9,9 @@ import { CategoryFilter } from "@/components/posts/CategoryFilter";
 import { PostCard } from "@/components/posts/PostCard";
 import { SearchBar } from "@/components/posts/SearchBar";
 import { Button } from "@/components/ui/button";
-import { getCategories, getPosts, getTags } from "@/lib/api";
 import type { Category, Post, Tag } from "@/lib/types";
 
 export function StoriesClient({ posts, categories, tags }: { posts: Post[]; categories: Category[]; tags: Tag[] }) {
-  const [allPosts, setAllPosts] = useState(posts);
-  const [allCategories, setAllCategories] = useState(categories);
-  const [allTags, setAllTags] = useState(tags);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [tag, setTag] = useState("");
@@ -24,42 +20,8 @@ export function StoriesClient({ posts, categories, tags }: { posts: Post[]; cate
   const [page, setPage] = useState(1);
   const perPage = 9;
 
-  useEffect(() => {
-    let active = true;
-    const load = async () => {
-      try {
-        const [postData, nextCategories, nextTags] = await Promise.all([
-          getPosts({ limit: 100, status: "PUBLISHED" }),
-          getCategories(),
-          getTags()
-        ]);
-        if (!active) return;
-        setAllPosts(postData.posts);
-        setAllCategories(nextCategories);
-        setAllTags(nextTags);
-      } catch {
-        if (active) {
-          setAllPosts(posts);
-          setAllCategories(categories);
-          setAllTags(tags);
-        }
-      }
-    };
-
-    load();
-    const onContentUpdated = () => {
-      load();
-    };
-
-    window.addEventListener("hercodeherstory-content-updated", onContentUpdated);
-    return () => {
-      active = false;
-      window.removeEventListener("hercodeherstory-content-updated", onContentUpdated);
-    };
-  }, [categories, posts, tags]);
-
   const filtered = useMemo(() => {
-    return allPosts.filter((post) => {
+    return posts.filter((post) => {
       const matchesSearch = !search || [post.title, post.excerpt, post.content].join(" ").toLowerCase().includes(search.toLowerCase());
       const matchesCategory = !category || post.category?.slug === category;
       const matchesTag = !tag || post.tags?.some((item) => item.tag.slug === tag);
@@ -67,7 +29,7 @@ export function StoriesClient({ posts, categories, tags }: { posts: Post[]; cate
       const matchesFeatured = !featured || post.isFeatured;
       return matchesSearch && matchesCategory && matchesTag && matchesMood && matchesFeatured;
     });
-  }, [allPosts, search, category, tag, mood, featured]);
+  }, [posts, search, category, tag, mood, featured]);
 
   const totalPages = Math.max(Math.ceil(filtered.length / perPage), 1);
   const visible = filtered.slice((page - 1) * perPage, page * perPage);
@@ -89,8 +51,8 @@ export function StoriesClient({ posts, categories, tags }: { posts: Post[]; cate
           <div className="grid gap-4">
             <SearchBar value={search} onChange={(value) => resetPage(() => setSearch(value))} />
             <CategoryFilter
-              categories={allCategories}
-              tags={allTags}
+              categories={categories}
+              tags={tags}
               category={category}
               tag={tag}
               mood={mood}
