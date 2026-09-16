@@ -1,3 +1,4 @@
+<img width="1536" height="1024" alt="ChatGPT Image Sep 16, 2026, 10_03_15 PM" src="https://github.com/user-attachments/assets/03855016-ef03-46f7-b4f3-072179e17b71" />
 # HerCodeHerStory - Shanika Munasinghe Frontend
 
 link : 
